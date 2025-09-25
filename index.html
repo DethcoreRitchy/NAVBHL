@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Virtual Hockey League — NHL 26 (VHL)</title>
+  <meta name="description" content="Create teams, rosters, schedule matches, enter scores, and view standings for an NHL 26 custom virtual league.">
+  <style>
+    :root{--bg:#07101a;--card:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));--accent:#0ea5b7;--muted:rgba(255,255,255,0.65)}
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; margin:0; padding:1rem; background:var(--bg); color:#e6eef8}
+    header{display:flex;gap:1rem;align-items:center;justify-content:space-between;margin-bottom:1rem}
+    .logo{width:48px;height:48px;border-radius:8px;background:linear-gradient(45deg,var(--accent),#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:800}
+    .brand{font-weight:700;font-size:1.125rem}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:1rem}
+    @media(max-width:880px){.grid{grid-template-columns:1fr}}
+    .card{background:var(--card);padding:1rem;border-radius:10px;margin-bottom:1rem;box-shadow:0 6px 18px rgba(0,0,0,0.5)}
+    input,select,textarea,button{font:inherit;padding:0.5rem;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+    button.cta{background:var(--accent);color:#021018;border:none;font-weight:700}
+    .muted{opacity:0.85;color:var(--muted)}
+    table{width:100%;border-collapse:collapse;color:inherit}
+    th,td{padding:0.5rem;text-align:left;border-bottom:1px dashed rgba(255,255,255,0.04);font-size:0.95rem}
+    .flex{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap}
+    .small{font-size:0.9rem}
+    .file{background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:6px}
+    .danger{background:#b91c1c;color:white;border:none}
+    .muted-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:0.35rem 0.5rem;border-radius:6px}
+    footer{margin-top:1rem;color:#9fb3c8;font-size:0.9rem;opacity:0.95}
+    .team-row{display:flex;align-items:center;gap:0.5rem;justify-content:space-between}
+    .logo-small{width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;font-weight:700}
+    .hint{font-size:0.85rem;opacity:0.9}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="flex">
+      <div class="logo">VHL</div>
+      <div>
+        <div class="brand">Virtual Hockey League — NHL 26</div>
+        <div class="muted small">Browser-based commissioner tools • Export/Import • Deploy to GitHub Pages or Netlify</div>
+      </div>
+    </div>
+    <div class="small muted">LocalStorage saved • Downloadable backup</div>
+  </header>
+
+  <main class="grid">
+    <section>
+      <div class="card">
+        <h3>Teams & Rosters</h3>
+        <div class="flex" style="margin-bottom:0.5rem;">
+          <input id="teamName" placeholder="New team name (e.g. Pacific Wolves)" />
+          <button id="addTeam" class="cta">Add Team</button>
+        </div>
+        <div id="teamList" class="small muted"></div>
+        <div class="divider"></div>
+        <div class="muted hint">Click View to add players. Use the roster to track captains, positions, and donate match assignments.</div>
+      </div>
+
+      <div class="card">
+        <h3>Schedule</h3>
+        <div class="flex" style="margin-bottom:0.5rem;">
+          <button id="generateSchedule" class="cta">Generate Round Robin</button>
+          <button id="clearSchedule" class="muted-btn">Clear</button>
+          <select id="roundsPerPair" title="Rounds per pair">
+            <option value="1">1 leg (single)</option>
+            <option value="2" selected>2 legs (home+away)</option>
+            <option value="4">4 legs</option>
+          </select>
+        </div>
+        <div id="scheduleList" class="small muted"></div>
+      </div>
+
+      <div class="card">
+        <h3>Results</h3>
+        <div id="resultsList" class="small muted"></div>
+        <div class="divider"></div>
+        <div class="small muted">Click a match to add/edit score. Supports ties (1 point) and wins (2 points).</div>
+      </div>
+
+      <div class="card">
+        <h3>Commissioner Tools</h3>
+        <div class="small muted">
+          <button id="exportBtn" class="muted-btn">Export JSON</button>
+          <input id="importFile" type="file" accept=".json" class="file" />
+        </div>
+        <div style="margin-top:0.6rem" class="flex">
+          <button id="resetAll" class="danger">Reset All</button>
+          <button id="loadSample" class="muted-btn">Load Sample League</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Netlify Forms (optional)</h3>
+        <div class="small muted">
+          You can enable the following registration form by deploying to Netlify and enabling Forms on your site. The form is included in this file (search for &lt;form netlify&gt; in the source).
+        </div>
+      </div>
+
+    </section>
+
+    <aside>
+      <div class="card">
+        <h3>Standings</h3>
+        <div id="standingsWrap" class="small muted">
+          <table id="standingsTable">
+            <thead><tr><th>Team</th><th>GP</th><th>W</th><th>L</th><th>PTS</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>Deploy</h4>
+        <div class="small muted">
+          Save the files to a GitHub repo and enable GitHub Pages (branch: main). Or drag & drop to Netlify for instant deploy. Full steps are in the included README.
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>Quick Actions</h4>
+        <div class="small muted">
+          <button id="printSchedule" class="muted-btn">Print Schedule</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    Built for NHL 26 EASHL-style leagues • Export data & hand to commissioners • If you want, provide your GitHub username and I will generate a ready-to-upload repository structure and exact commands.
+  </footer>
+
+  <!-- Optional Netlify registration form (uncomment before deploy to Netlify) -->
+  <!--
+  <form name="team-registration" method="POST" netlify>
+    <input type="hidden" name="form-name" value="team-registration" />
+    <label>Team name <input name="team" /></label>
+    <label>Contact email <input name="email" type="email" /></label>
+    <label>Captain <input name="captain" /></label>
+    <button type="submit">Register</button>
+  </form>
+  -->
+
+  <script>
+    const stateKey = 'vhl_nhl26_state_v2';
+    let state = { teams: [], schedule: [], results: {} };
+
+    const $ = id => document.getElementById(id);
+    function save(){ localStorage.setItem(stateKey, JSON.stringify(state)); render(); }
+    function load(){ try{ const s = JSON.parse(localStorage.getItem(stateKey)); if(s) state = s; }catch(e){} render(); }
+
+    // Teams + rosters
+    $('addTeam').addEventListener('click', ()=>{
+      const name = $('teamName').value.trim();
+      if(!name) return alert('Enter a team name');
+      if(state.teams.find(t=>t.name.toLowerCase()===name.toLowerCase())) return alert('Team already exists');
+      const id = 't'+Date.now().toString(36);
+      state.teams.push({ id, name, roster: [] });
+      $('teamName').value = '';
+      save();
+    });
+
+    window.viewTeam = function(id){
+      const team = state.teams.find(t=>t.id===id);
+      if(!team) return;
+      const name = prompt('Team name:', team.name);
+      if(name===null) return;
+      team.name = name.trim() || team.name;
+      // roster management prompt (quick)
+      if(confirm('Manage roster now? Click OK to open roster editor (simple).')){
+        manageRoster(team);
+      } else save();
+    }
+
+    function manageRoster(team){
+      let out = 'Roster for ' + team.name + '\\n\\n';
+      team.roster.forEach((p,i)=> out += `${i+1}. ${p.name} — ${p.position || 'NA'}${p.captain? ' (C)':''}\\n`);
+      out += '\\nCommands:\\n- To add: type: +Name,Position (example: +John Doe,LD)\\n- To remove: -number (example: -2)\\n- To toggle captain: c<number> (example: c1)\\nLeave blank to finish.';
+      const res = prompt(out, '');
+      if(res===null) return save();
+      const lines = res.split('\\n').map(s=>s.trim()).filter(Boolean);
+      for(const line of lines){
+        if(line.startsWith('+')){
+          const parts = line.slice(1).split(',');
+          const pname = parts[0].trim();
+          const pos = parts[1] ? parts[1].trim() : '';
+          team.roster.push({ id:'p'+Date.now().toString(36), name:pname, position:pos, captain:false });
+        } else if(line.startsWith('-')){
+          const idx = parseInt(line.slice(1).trim(),10)-1;
+          if(!isNaN(idx) && idx>=0 && idx<team.roster.length) team.roster.splice(idx,1);
+        } else if(line.startsWith('c')){
+          const idx = parseInt(line.slice(1).trim(),10)-1;
+          if(!isNaN(idx) && idx>=0 && idx<team.roster.length) team.roster[idx].captain = !team.roster[idx].captain;
+        }
+      }
+      save();
+    }
+
+    window.removeTeamConfirm = function(id){
+      if(!confirm('Remove team and roster?')) return;
+      state.teams = state.teams.filter(t=>t.id!==id);
+      state.schedule = [];
+      state.results = {};
+      save();
+    }
+
+    // Round-robin generator (Berger) supporting multiple legs
+    function roundRobinIDs(ids){
+      if(ids.length===0) return [];
+      const list = ids.slice();
+      const isOdd = list.length % 2 === 1;
+      if(isOdd) list.push(null);
+      const n = list.length;
+      const rounds = [];
+      for(let r=0;r<n-1;r++){
+        const pairs = [];
+        for(let i=0;i<n/2;i++){
+          pairs.push([list[i], list[n-1-i]]);
+        }
+        rounds.push(pairs);
+        // rotate except first
+        const fixed = list[0];
+        const rest = list.slice(1);
+        rest.unshift(rest.pop());
+        list.splice(1, rest.length, ...rest);
+        list[0] = fixed;
+      }
+      return rounds;
+    }
+
+    $('generateSchedule').addEventListener('click', ()=>{
+      if(state.teams.length < 2) return alert('Need at least two teams');
+      const roundsPerPair = parseInt($('roundsPerPair').value,10) || 2;
+      const ids = state.teams.map(t=>t.id);
+      const baseRounds = roundRobinIDs(ids);
+      let matches = [];
+      // create legs (home/away toggled)
+      for(let leg=0; leg<roundsPerPair; leg++){
+        for(let r=0;r<baseRounds.length;r++){
+          const pairs = baseRounds[r];
+          for(const p of pairs){
+            const home = (leg % 2 === 0) ? p[0] : p[1];
+            const away = (leg % 2 === 0) ? p[1] : p[0];
+            matches.push({ id:`m-${leg}-${r}-${p[0]||'bye'}-${p[1]||'bye'}`, round: r+1, leg: leg+1, home, away });
+          }
+        }
+      }
+      state.schedule = matches;
+      state.results = {};
+      save();
+    });
+
+    $('clearSchedule').addEventListener('click', ()=>{ if(confirm('Clear schedule and results?')){ state.schedule=[]; state.results={}; save(); } });
+
+    // Results entry via prompt
+    window.editMatch = function(matchId){
+      const match = state.schedule.find(m=>m.id===matchId);
+      if(!match) return;
+      const homeName = match.home ? (state.teams.find(t=>t.id===match.home)?.name || 'TBD') : 'BYE';
+      const awayName = match.away ? (state.teams.find(t=>t.id===match.away)?.name || 'TBD') : 'BYE';
+      const existing = state.results[matchId];
+      const current = existing ? `${existing.homeScore}-${existing.awayScore}` : '';
+      const entry = prompt(`Enter score for ${homeName} vs ${awayName} (format: H-A). Leave blank to remove.`, current);
+      if(entry === null) return;
+      const v = entry.trim();
+      if(v === ''){ delete state.results[matchId]; save(); return; }
+      const parts = v.split('-').map(s=>parseInt(s.trim(),10));
+      if(parts.length!==2 || isNaN(parts[0]) || isNaN(parts[1])) return alert('Score must be like 3-2');
+      state.results[matchId] = { homeScore: parts[0], awayScore: parts[1] };
+      save();
+    }
+
+    // Standings calculation
+    function computeStandings(){
+      const table = {};
+      for(const t of state.teams) table[t.id] = { id:t.id, name:t.name, gp:0, w:0, l:0, pts:0, gf:0, ga:0 };
+      for(const m of state.schedule){
+        const res = state.results[m.id];
+        if(!res) continue;
+        if(m.home) table[m.home].gp++;
+        if(m.away) table[m.away].gp++;
+        const h = res.homeScore, a = res.awayScore;
+        if(m.home){ table[m.home].gf += h; table[m.home].ga += a; }
+        if(m.away){ table[m.away].gf += a; table[m.away].ga += h; }
+        if(h === a){
+          if(m.home) table[m.home].pts += 1;
+          if(m.away) table[m.away].pts += 1;
+        } else if(h > a){
+          if(m.home){ table[m.home].w += 1; table[m.home].pts += 2; }
+          if(m.away){ table[m.away].l += 1; }
+        } else {
+          if(m.away){ table[m.away].w += 1; table[m.away].pts += 2; }
+          if(m.home){ table[m.home].l += 1; }
+        }
+      }
+      const arr = Object.values(table);
+      arr.sort((a,b) => (b.pts - a.pts) || (b.w - a.w) || ((b.gf-b.ga) - (a.gf-a.ga)) || a.name.localeCompare(b.name));
+      return arr;
+    }
+
+    // UI render
+    function render(){
+      // teams
+      const teamList = $('teamList');
+      if(state.teams.length===0) teamList.innerHTML = '<div class="muted small">No teams yet</div>';
+      else {
+        teamList.innerHTML = state.teams.map(t=>{
+          const rosterCount = t.roster ? t.roster.length : 0;
+          return `<div class="team-row"><div class="flex"><div class="logo-small">${t.name.slice(0,2).toUpperCase()}</div><div><strong>${t.name}</strong><div class="small muted">${rosterCount} players</div></div></div><div><button class="muted-btn" onclick="viewTeam('${t.id}')">View</button> <button class="muted-btn" onclick="removeTeamConfirm('${t.id}')">Remove</button></div></div>`;
+        }).join('<hr style="border:none;height:1px;background:rgba(255,255,255,0.02);margin:0.4rem 0">');
+      }
+
+      // schedule
+      const sched = $('scheduleList');
+      if(state.schedule.length===0) sched.innerHTML = '<div class="muted small">No schedule generated</div>';
+      else {
+        const out = state.schedule.map(m=>{
+          const home = m.home ? (state.teams.find(t=>t.id===m.home)?.name || 'TBD') : 'BYE';
+          const away = m.away ? (state.teams.find(t=>t.id===m.away)?.name || 'TBD') : 'BYE';
+          const res = state.results[m.id] ? `${state.results[m.id].homeScore} - ${state.results[m.id].awayScore}` : '—';
+          return `<div class="match small"><div>${home} vs ${away} <span class="muted">R${m.round} L${m.leg}</span></div><div style="margin-top:0.25rem"><button class="muted-btn" onclick="editMatch('${m.id}')">${res}</button></div></div>`;
+        }).join('');
+        sched.innerHTML = out;
+      }
+
+      // results
+      const resultsDiv = $('resultsList');
+      resultsDiv.innerHTML = state.schedule.map(m=>{
+        const home = m.home ? (state.teams.find(t=>t.id===m.home)?.name || 'TBD') : 'BYE';
+        const away = m.away ? (state.teams.find(t=>t.id===m.away)?.name || 'TBD') : 'BYE';
+        const res = state.results[m.id] ? `${state.results[m.id].homeScore} - ${state.results[m.id].awayScore}` : '—';
+        return `<div class="match"><div>${home} vs ${away} <span class="muted">R${m.round} L${m.leg}</span></div><div><button class="muted-btn" onclick="editMatch('${m.id}')">${res}</button></div></div>`;
+      }).join('');
+
+      // standings
+      const sb = computeStandings();
+      const tbody = document.querySelector('#standingsTable tbody');
+      tbody.innerHTML = sb.map(r=>`<tr><td>${r.name}</td><td>${r.gp}</td><td>${r.w}</td><td>${r.l}</td><td>${r.pts}</td></tr>`).join('');
+    }
+
+    // global helpers
+    window.removeTeamConfirm = function(id){ if(confirm('Remove team?')){ state.teams = state.teams.filter(t=>t.id!==id); state.schedule=[]; state.results={}; save(); } }
+    window.viewTeam = function(id){ viewTeam(id); }
+    window.editMatch = editMatch;
+
+    // export/import/reset/sample
+    $('exportBtn').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'vhl_league.json'; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    $('importFile').addEventListener('change', (ev)=>{
+      const f = ev.target.files[0]; if(!f) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if(!parsed.teams) return alert('Not a valid league file');
+          state = parsed; save();
+        } catch(err){ alert('Invalid file'); }
+      };
+      reader.readAsText(f);
+    });
+
+    $('resetAll').addEventListener('click', ()=>{ if(confirm('Reset everything?')){ state = { teams: [], schedule: [], results: {} }; save(); } });
+    $('loadSample').addEventListener('click', ()=>{
+      state = {
+        teams:[
+          {id:'t1',name:'Pacific Wolves', roster:[{id:'p1',name:'Alex Rider',position:'C',captain:true}]},
+          {id:'t2',name:'Northern Blades', roster:[]},
+          {id:'t3',name:'Prairie Kings', roster:[]},
+          {id:'t4',name:'Coastal Storm', roster:[]}
+        ],
+        schedule:[],
+        results:{}
+      };
+      save();
+    });
+
+    $('printSchedule').addEventListener('click', ()=>{ window.print(); });
+
+    // init
+    load();
+  </script>
+</body>
+</html>
